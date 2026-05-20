@@ -1,0 +1,388 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Enter Questions and Answers",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Name"
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email"
+            },
+            {
+              "fieldLabel": "What is your question?"
+            },
+            {
+              "fieldLabel": "Your Answer:",
+              "fieldType": "textarea"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -304,
+        -32
+      ],
+      "id": "96bdf0a1-db03-4c19-b1af-99bd570bd493",
+      "name": "On form submission",
+      "webhookId": "93bf87ec-1b92-4829-99c4-f5b7c06a453f"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "82b9484b-c4df-472c-b1e1-d6b355db0cc3",
+              "leftValue": "={{ $json.Email }}",
+              "rightValue": "n8n.io",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -96,
+        -32
+      ],
+      "id": "06465004-abc2-474e-9f3a-429049cccfb2",
+      "name": "is_email_n8n.io"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "79313963-39a7-4579-8b69-132bd3eaba2d",
+              "name": "isTrusted",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        112,
+        -128
+      ],
+      "id": "97ba8c0e-40b2-4aea-9b8a-e2b14f8dad91",
+      "name": "isTrusted_True"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b62beb8a-54f8-478c-b659-372a288c34e7",
+              "name": "isTrusted",
+              "value": false,
+              "type": "boolean"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        112,
+        64
+      ],
+      "id": "0e894049-0060-4c24-bfdd-3625628500c6",
+      "name": "isTrusted_False"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        336,
+        -32
+      ],
+      "id": "9e7fbd78-3c34-4330-8c7b-b37dae5a4548",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        480,
+        176
+      ],
+      "id": "a7b7522d-1175-4340-bd97-c56382047520",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "WOcEnkavVNqKYvrl",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Analyze the following question and answer and put relevant tags.\n\nQuestion: {{ $json['What is your question?']}}\nAnswer: {{ $json['Your Answer:'] }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a content tagging expert. Your task is to analyze question and answer submissions and generate relevant, descriptive tags that categorize the content based on topic, key concepts, and technical terms. Always provide 4-8 tags as a comma separated list. Keep tags short and focused in individual length.\n\nExample Output: \npartner, partnership, agency, external contractors, lead referral"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        544,
+        -32
+      ],
+      "id": "310dc90d-a176-4e0f-9006-f78362a7d034",
+      "name": "Add Tags"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "duoaOVaeJuFt20tR",
+          "mode": "list",
+          "cachedResultName": "qa",
+          "cachedResultUrl": "/projects/84CXNQ29Akpq0Kn1/datatables/duoaOVaeJuFt20tR"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "isTrusted": "={{ $('isTrusted_True').item.json.isTrusted }}",
+            "Name": "={{ $('On form submission').item.json.Name }}",
+            "Email": "={{ $('On form submission').item.json.Email }}",
+            "Question": "={{ $('On form submission').item.json['What is your question?'] }}",
+            "Answer": "={{ $('On form submission').item.json['Your Answer:'] }}",
+            "Tags": "={{ $json.text }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Question",
+              "displayName": "Question",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Answer",
+              "displayName": "Answer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "isTrusted",
+              "displayName": "isTrusted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Tags",
+              "displayName": "Tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        -32
+      ],
+      "id": "ea05c36f-7832-4470-95bd-09e9956d9888",
+      "name": "Insert row"
+    }
+  ],
+  "pinData": {
+    "On form submission": [
+      {
+        "json": {
+          "Name": "Kamran",
+          "Email": "kamran@n8n.io",
+          "What is your question?": "Who is Kamran",
+          "Your Answer:": "Kamran is a CS Student\r\n",
+          "submittedAt": "2026-05-20T13:39:46.280+05:00",
+          "formMode": "test"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "is_email_n8n.io",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "is_email_n8n.io": {
+      "main": [
+        [
+          {
+            "node": "isTrusted_True",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "isTrusted_False",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "isTrusted_False": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "isTrusted_True": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Operation, do nothing": {
+      "main": [
+        [
+          {
+            "node": "Add Tags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Add Tags",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Tags": {
+      "main": [
+        [
+          {
+            "node": "Insert row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a2cb00b9-3485-4362-8583-c6a64bde4043",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ea10310180dd49519edee03af5c31d4b6a8593123ad22506bac403b50ecb6cfd"
+  },
+  "id": "2WMPxIVfmZlmU663",
+  "tags": []
+}
